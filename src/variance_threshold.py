@@ -46,6 +46,7 @@ class VarianceThreshold:
         -------
         self : object
         """
+        #VER SE É TUDO NUMERICO
         self.variance = np.var(dataset.X, axis=0)
         return self
 
@@ -64,4 +65,7 @@ class VarianceThreshold:
         features_mask = self.variance > self.threshold
         X = X[:, features_mask]
         features = np.array(dataset.features)[features_mask]
-        return Dataset(X=X, y=dataset.y, features=list(features), label=dataset.label)
+        numeric_features = list(dataset.get_numeric_features())
+        discrete_features = []
+        print("NF: ",numeric_features)
+        return Dataset(X=X, y=dataset.y, features=list(features),discrete_features=[],numeric_features=numeric_features, label=dataset.label)

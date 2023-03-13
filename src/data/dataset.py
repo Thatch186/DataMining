@@ -28,6 +28,7 @@ class Dataset:
         label: str (1)
             The label name
         """
+
         if X is None:
             raise ValueError("X cannot be None")
 
@@ -35,7 +36,6 @@ class Dataset:
             features = [str(i) for i in range(X.shape[1])]
         else:
             features = list(features)
-
         if discrete_features is None and numeric_features is None:
             raise ValueError("At least one of discrete_features or numeric_features must be provided")
         elif discrete_features is None:
@@ -226,3 +226,9 @@ class Dataset:
         nulls = np.count_nonzero(bool_array, axis = 0)
         return nulls
     
+    def get_numeric_features(self):
+        numeric_features = []
+        for i, feat in enumerate(self.features):
+            if np.issubdtype(self.X[:, i].dtype, np.number):
+                numeric_features.append(feat)
+        return numeric_features
