@@ -2,7 +2,6 @@ import numpy as np
 from scipy.stats import chi2_contingency
 
 class DecisionTree:
-    # Inicializador
     def __init__(self, criterion='entropy', splitter='best', max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None,
                  max_leaf_nodes=None, class_threshold=0.5, pre_pruning=None, post_pruning=None, min_size=None):
         self.criterion = criterion
@@ -18,27 +17,40 @@ class DecisionTree:
         self.min_size = min_size
         self.tree = None
 
-    # Cálculo da entropia
+    def fit(self, X, y):
+        self.tree = self._build_tree(X, y, depth=0, n_nodes=0)
+
+    def _predict_sample(self, x, node):
+        if 'label' in node:
+            return node['label']
+
+        if x[node['feature_idx']] < node['threshold']:
+            return self._predict_sample(x, node['left'])
+        else:
+            return self._predict_sample(x, node['right'])
+
+    def predict(self, X):
+        predictions = [self._predict_sample(x, self.tree) for x in X]
+        return np.array(predictions)
+
+
     def _calculate_entropy(self, y):
         _, counts = np.unique(y, return_counts=True)
         probabilities = counts / counts.sum()
         entropy = -np.sum(probabilities * np.log2(probabilities))
         return entropy
 
-    # Cálculo do índice de Gini
     def _calculate_gini(self, y):
         _, counts = np.unique(y, return_counts=True)
         probabilities = counts / counts.sum()
         gini = 1 - np.sum(probabilities**2)
         return gini
 
-    # Cálculo da taxa de ganho
     def _gain_ratio(self, gain, y, y_left, y_right):
         split_info = -((len(y_left) / len(y)) * np.log2(len(y_left) / len(y)) + (len(y_right) / len(y)) * np.log2(len(y_right) / len(y)))
         gain_ratio = gain / split_info
         return gain_ratio
 
-    # Seleção do melhor ponto de divisão
     def _best_split(self, X, y):
         best_value = 0
         best_feature_idx = -1
@@ -80,7 +92,6 @@ class DecisionTree:
 
         return best_feature_idx, best_threshold
 
-    # Construção da árvore de decisão
     def _build_tree(self, X, y, depth, n_nodes):
         # Condição de paragem para criação de um nó folha
         if depth == self.max_depth or len(np.unique(y)) == 1 or len(y) < self.min_samples_split or n_nodes == self.max_leaf_nodes or (self.min_size is not None and len(y) < self.min_size):
@@ -103,14 +114,12 @@ class DecisionTree:
 
         return {'feature_idx': feature_idx, 'threshold': threshold, 'left': left, 'right': right}
                                 
-    # Votação majoritária com limiar
     def _majority_voting_with_threshold(self, y):
         class_counts = np.bincount(y)
         max_count = np.max(class_counts)
         majority_class = np.argmax(class_counts)
         return majority_class if max_count / len(y) > self.class_threshold else None
 
-    # Teste de chi-quadrado para pré-poda
     def _chi_squared_test(self, X, y, feature_idx, threshold):
         contingency_table = np.zeros((2, len(np.unique(y))))
         mask = X[:, feature_idx] < threshold
@@ -121,26 +130,6 @@ class DecisionTree:
         chi2, p_value, _, _ = chi2_contingency(contingency_table)
         return p_value
 
-  # Treino da árvore de decisão
-    def fit(self, X, y):
-        self.tree = self._build_tree(X, y, depth=0, n_nodes=0)
-
-    # Predição de uma amostra
-    def _predict_sample(self, x, node):
-        if 'label' in node:
-            return node['label']
-
-        if x[node['feature_idx']] < node['threshold']:
-            return self._predict_sample(x, node['left'])
-        else:
-            return self._predict_sample(x, node['right'])
-    
-    # Predição do conjunto de dados
-    def predict(self, X):
-        predictions = [self._predict_sample(x, self.tree) for x in X]
-        return np.array(predictions)
-
-    # Poda por erro reduzido
     def _reduced_error_pruning(self, node, X, y):
         if 'label' in node:
             return node
@@ -165,8 +154,7 @@ class DecisionTree:
 
         self.tree = node
         return node
-
-    # Poda pessimista de erro
+    
     def _pessimistic_error_pruning(self, node, X, y, n):
         if 'label' in node:
             node['error'] = np.sum(y != node['label'])
@@ -190,7 +178,6 @@ class DecisionTree:
 
         return node
 
-    # Método para aplicar a poda na árvore de decisão
     def prune(self, X, y):
         if self.post_pruning == 'reduced_error_pruning':
             self.tree = self._reduced_error_pruning(self.tree, X, y)
