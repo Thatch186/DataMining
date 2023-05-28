@@ -1,4 +1,5 @@
 from collections import defaultdict
+from transactionDataset import TransactionDataset
 
 class FPTree:
     class Node:
@@ -40,3 +41,31 @@ class FPTree:
             if child_node.item == item:
                 return child_node
         return None
+
+    def print_tree_root(self):
+        print("FP Tree Root:", self.root.item)
+
+    def print_header_table(self):
+        print("Header Table:")
+        for item, nodes in self.header_table.items():
+            node_items = [node.item for node in nodes]
+            print(f"Item: {item}, Nodes: {node_items}")
+
+
+if __name__ == "__main__":
+    # Create a TransactionDataset object
+    transaction_dataset = TransactionDataset()
+
+    # Add transactions
+    transaction_dataset.add_transaction(["item1", "item2", "item3"])
+    transaction_dataset.add_transaction(["item2", "item3", "item4"])
+    transaction_dataset.add_transaction(["item1", "item3", "item4"])
+
+    # Create an FPTree object
+    fp_tree = FPTree(transaction_dataset)
+
+    # Print the FP Tree root
+    fp_tree.print_tree_root()
+
+    # Print the header table
+    fp_tree.print_header_table()

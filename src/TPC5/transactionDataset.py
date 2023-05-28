@@ -18,5 +18,16 @@ class TransactionDataset:
         return frequent_items
 
 
+if __name__ == "__main__":
+    # Create a TransactionDataset object
+    dataset = TransactionDataset()
 
+    # Add transactions
+    dataset.add_transaction(["item1", "item2", "item3"])
+    dataset.add_transaction(["item2", "item3", "item4"])
+    dataset.add_transaction(["item1", "item3", "item4"])
+
+    # Get frequent items with minimum support of 2
+    frequent_items = dataset.get_frequent_items(min_support=2)
+    print("Frequent Items:", frequent_items)
 

@@ -1,3 +1,6 @@
+from collections import defaultdict
+from transactionDataset import TransactionDataset
+
 class AprioriAlgorithm:
     def __init__(self, transaction_dataset, min_support):
         self.transaction_dataset = transaction_dataset
@@ -6,7 +9,6 @@ class AprioriAlgorithm:
 
     def run(self):
         self._generate_frequent_itemsets()
-        self._generate_association_rules()
 
     def _generate_frequent_itemsets(self):
         frequent_items = self.transaction_dataset.get_frequent_items(self.min_support)
@@ -37,4 +39,31 @@ class AprioriAlgorithm:
         for transaction in self.transaction_dataset.transactions:
             for itemset in candidate_itemsets:
                 if set(itemset).issubset(transaction):
-                    item_counts[tuple(itemset)]
+                    item_counts[tuple(itemset)] += 1
+
+        for itemset, count in item_counts.items():
+            if count >= self.min_support:
+                frequent_itemsets.append(list(itemset))
+
+        return frequent_itemsets
+
+if __name__ == "__main__":
+    # Create a TransactionDataset object
+    transaction_dataset = TransactionDataset()
+
+    # Add transactions
+    transaction_dataset.add_transaction(["item1", "item2", "item3"])
+    transaction_dataset.add_transaction(["item2", "item3", "item4"])
+    transaction_dataset.add_transaction(["item1", "item3", "item4"])
+
+    # Create an AprioriAlgorithm object
+    apriori = AprioriAlgorithm(transaction_dataset, min_support=2)
+
+    # Run the Apriori algorithm
+    apriori.run()
+
+    # Print the frequent itemsets
+    frequent_itemsets = apriori.frequent_itemsets
+    print("Frequent Itemsets:")
+    for k, itemsets in enumerate(frequent_itemsets):
+        print("k =", k + 1, ":", itemsets)
