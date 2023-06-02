@@ -77,3 +77,23 @@ class LogisticRegression:
     @staticmethod
     def sigmoid(z):
         return 1 / (1 + np.exp(-z))
+
+if __name__ == "__main__":
+    # Create a sample dataset
+    X = np.array([[1, 2], [3, 4], [5, 6]])
+    y = np.array([0, 1, 0])
+
+    # Create an instance of the LogisticRegression class
+    lr = LogisticRegression(epochs=1000, lr=0.001, ldb=1, gd=True)
+
+    # Fit the model to the dataset
+    lr.fit(X, y)
+
+    # Test the predict method
+    x_test = np.array([7, 8])
+    prediction = lr.predict(x_test)
+    print("Prediction:", prediction)
+
+    # Test the cost method
+    cost = lr.cost(X, y)
+    print("Cost:", cost)
