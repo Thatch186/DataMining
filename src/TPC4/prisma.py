@@ -1,162 +1,47 @@
 import numpy as np
 from scipy.stats import mode
-
-#IMPORT ACCURACY_SCORE
 from sklearn.metrics import accuracy_score
-from data.dataset import Dataset
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
 
-
-class PRISM(object):
-    """
-    PRISM is a rule-based classifier that uses a greedy search to find the best rule.
-    """
-
+class PRISM:
     def __init__(self):
-        """
-        Initialize the PRISM classifier.
-        """
-
-        super(PRISM, self).__init__()
         self.rules = []
 
-    def fit(self, dataset : Dataset):
-        """
-        Fit the PRISM classifier to the dataset.
-
-        Parameters
-        ----------
-        dataset : Dataset
-            The dataset to fit the classifier to.
-            
-        Raises
-        ------
-        ValueError
-            If the dataset is not a classification dataset.
-        """
-
-        self.dataset = dataset
-        X, y = dataset.get_X(), dataset.get_y()
-        discrete_mask = self.dataset.get_discrete_mask()
-
-        if len(np.unique(y)) == 1:
-            self.rules.append((None, y[0]))
-            return
-        
+    def fit(self, X, y):
+        self.rules = []
+        discrete_mask = self._get_discrete_mask(X)
         while len(np.unique(y)) > 1:
             best_rule, best_score = None, -np.inf
-
             for feature_idx, is_discrete in enumerate(discrete_mask):
                 if is_discrete:
                     unique_values = np.unique(X[:, feature_idx])
                     covered = np.equal.outer(X[:, feature_idx], unique_values)
-
                     for i, value in enumerate(unique_values):
                         rule = (feature_idx, value)
-                        score = self.evaluate_rule(X, y, rule, covered[:, i])
+                        score = self._evaluate_rule(X, y, rule, covered[:, i])
                         if score > best_score:
                             best_rule, best_score = rule, score
                 else:
-                    # Handling numeric features
                     unique_values = np.unique(X[:, feature_idx])
-
                     for i, value in enumerate(unique_values):
                         covered = X[:, feature_idx] <= value
-                        rule = (feature_idx, value, True)  # Less than or equal to value
+                        rule = (feature_idx, value, True)
                         score = self.evaluate_rule(X, y, rule, covered)
-
                         if score > best_score:
                             best_rule, best_score = rule, score
-
                         covered = X[:, feature_idx] > value
-                        rule = (feature_idx, value, False)  # Greater than value
+                        rule = (feature_idx, value, False)
                         score = self.evaluate_rule(X, y, rule, covered)
-
                         if score > best_score:
                             best_rule, best_score = rule, score
-
+            if best_rule is None:
+                break
             self.rules.append(best_rule)
-            X, y = self.remove_covered_examples(X, y, best_rule)
-
-    def evaluate_rule(self, X, y, rule, covered):
-        """
-        Evaluate the rule on the dataset.
-
-        Parameters
-        ----------
-        X : np.ndarray
-            The dataset to evaluate the rule on.
-        y : np.ndarray
-            The target values of the dataset.
-        rule : tuple
-            The rule to evaluate.
-        covered : np.ndarray
-            A boolean array indicating which examples are covered by the rule.
-        
-        Returns
-        -------
-        float
-            The accuracy of the rule.
-        """
-
-        feature_idx, value = rule[:2]
-        target_covered = y[covered]
-        most_common, _ = mode(target_covered, keepdims = True)
-        correct = np.sum(target_covered == most_common)
-        return correct / len(target_covered)
-
-    def remove_covered_examples(self, X, y, rule):
-        """
-        Remove the examples covered by the rule from the dataset.
-
-        Parameters
-        ----------
-        X : np.ndarray
-            The dataset to remove the examples from.
-        y : np.ndarray
-            The target values of the dataset.
-        rule : tuple
-            The rule to evaluate.
-        
-        Returns
-        -------
-        np.ndarray
-            The dataset without the examples covered by the rule.
-        np.ndarray
-            The target values without the examples covered by the rule.
-        """
-
-        feature_idx, value = rule[:2]
-        if len(rule) == 3:
-            is_less_than_or_equal = rule[2]
-            if is_less_than_or_equal:
-                not_covered = X[:, feature_idx] > value
-            else:
-                not_covered = X[:, feature_idx] <= value
-        else:
-            not_covered = X[:, feature_idx] != value
-
-        return X[not_covered], y[not_covered]
+            X, y = self._remove_covered_examples(X, y, best_rule)
 
     def predict(self, X):
-        """
-        Predict the target values of the dataset.
-
-        Parameters
-        ----------
-        X : np.ndarray
-            The dataset to predict the target values of.
-        
-        Returns
-        -------
-        np.ndarray
-            The predicted target values.
-        
-        Raises
-        ------
-        ValueError
-            If the model is not fitted.
-        
-        """
         predictions = np.zeros(X.shape[0], dtype=int)
         for rule in self.rules:
             feature_idx, value = rule[:2]
@@ -168,9 +53,81 @@ class PRISM(object):
                     covered = X[:, feature_idx] > value
             else:
                 covered = X[:, feature_idx] == value
-
             if np.any(covered):
-                target_covered = self.dataset.y[self.dataset.X[:, feature_idx] == value]
-                most_common, _ = mode(target_covered, keepdims = True)
-                predictions[covered] = most_common
+                target_covered = self._get_target_covered(covered)
+                most_common, _ = mode(target_covered, keepdims=True)
+                predictions[covered] = most_common[0]
+
         return predictions
+
+    def _get_discrete_mask(self, X):
+        discrete_mask = []
+        for i in range(X.shape[1]):
+            unique_values = np.unique(X[:, i])
+            discrete_mask.append(len(unique_values) <= int(np.sqrt(X.shape[0])))
+        return discrete_mask
+
+    def evaluate_rule(self, X, y, rule, covered):
+
+        target_covered = y[covered]
+
+        if len(target_covered) == 0:
+            return 0.0
+
+        most_common, _ = mode(target_covered, nan_policy='omit')
+        correct = np.sum(target_covered == most_common)
+
+        return correct / len(target_covered)
+
+    def _remove_covered_examples(self, X, y, rule):
+        feature_idx, value = rule[:2]
+        if len(rule) == 3:
+            is_less_than_or_equal = rule[2]
+            if is_less_than_or_equal:
+                not_covered = X[:, feature_idx] > value
+            else:
+                not_covered = X[:, feature_idx] <= value
+        else:
+            not_covered = X[:, feature_idx] != value
+        return X[not_covered], y[not_covered]
+
+    def _get_target_covered(self, covered):
+            df_covered = pd.DataFrame({'covered': covered})
+            most_common = df_covered.mode()['covered'].iloc[0]
+            return most_common
+
+
+    def score(self, X, y):
+        y_pred = self.predict(X)
+        return accuracy_score(y, y_pred)
+
+
+if __name__ == '__main__':
+    # Create or load your dataset using pandas
+    df = pd.read_csv("src/TPC4/iris.csv")  # Replace with the path to your dataset
+
+    X = df.iloc[:, :-1].values
+    y = df.iloc[:, -1].values
+
+    # Convert class column to numeric values
+    label_encoder = LabelEncoder()
+    y_encoded = label_encoder.fit_transform(y)
+
+    # Split the dataset into training and test sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y_encoded, test_size=0.2, random_state=42)
+
+    # Create an instance of the PRISM classifier
+    prism = PRISM()
+
+    # Fit the PRISM classifier to the training set
+    prism.fit(X_train, y_train)
+
+    # Generate predictions on the test set
+    predictions_encoded = prism.predict(X_test)
+
+    # Convert predictions back to original class labels
+    predictions = label_encoder.inverse_transform(predictions_encoded)
+
+    # Calculate and print the accuracy
+    accuracy = accuracy_score(y_test, predictions)
+    print("Accuracy:", accuracy)
