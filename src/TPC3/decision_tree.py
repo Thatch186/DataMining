@@ -1,5 +1,7 @@
 import numpy as np
 from scipy.stats import chi2_contingency
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
 
 class DecisionTree:
     def __init__(self, criterion='entropy', splitter='best', max_depth=None, min_samples_split=2, min_samples_leaf=1, max_features=None,
@@ -185,3 +187,30 @@ class DecisionTree:
             self.tree = self._pessimistic_error_pruning(self.tree, X, y)
         else:
             raise ValueError(f"Invalid post_pruning '{self.post_pruning}', use 'reduced_error_pruning' or 'pessimistic_error_pruning'")
+        
+if __name__ == '__main__':
+    # Read the dataset
+    dataset = pd.read_csv("src/TPC3/iris.csv")
+
+    # Split the dataset into X and y
+    X = dataset.drop('class', axis=1).to_numpy()
+    y = dataset['class']
+
+    # Encode the target variable
+    label_encoder = LabelEncoder()
+    y = label_encoder.fit_transform(y)
+
+    # Create an instance of the DecisionTree
+    tree = DecisionTree()
+
+    # Fit the DecisionTree to the data
+    tree.fit(X, y)
+
+    # Make predictions on the training data
+    predictions = tree.predict(X)
+
+    # Calculate accuracy
+    accuracy = np.mean(predictions == y)
+
+    # Print the accuracy
+    print("Accuracy:", accuracy)

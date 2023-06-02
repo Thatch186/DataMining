@@ -59,3 +59,32 @@ class Dataset:
             mean_value = self.X[column].mean()
             self.X[column] = self.X[column].fillna(mean_value)
 
+if __name__ == "__main__":
+    # Teste da classe Dataset
+    dataset = Dataset()
+    dataset.set_label_name("class")
+
+    # Leitura de um arquivo CSV
+    dataset.read_csv("src/TPC1/iris_missing_data.csv")
+
+    # Imprimir os nomes das features
+    print("Feature names:", dataset.feature_names)
+
+    # Descrição estatística dos dados
+    print("Descrição:")
+    print(dataset.describe())
+
+    # Contagem de valores nulos
+    print("Contagem de valores nulos:")
+    print(dataset.count_null())
+
+    # Substituir valores nulos por uma constante (ex: 0)
+    dataset.replace_null_with_mean()
+
+    # Escrever dados em um novo arquivo CSV
+    dataset.write_csv("src/TPC1/data_preprocessed.csv")
+    dataset.read_csv("src/TPC1/data_preprocessed.csv")
+    print("Descrição depois de processar:")
+    print(dataset.describe())
+    print("Contagem de valores nulos:")
+    print(dataset.count_null())
