@@ -238,7 +238,7 @@ if __name__ == "__main__":
     from to_csv import read_csv
 
     # Carregar o conjunto de dados iris_missing_data
-    dataset = read_csv("iris_missing_data.csv", features=True, label=True)
+    dataset = read_csv("src/TPC1/iris_missing_data.csv", features=True, label=True)
 
     # Exibir as informações do conjunto de dados
     print("Shape:", dataset.shape())
