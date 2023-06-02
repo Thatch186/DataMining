@@ -1,5 +1,5 @@
 import numpy as np
-from data.dataset import Dataset
+from dataset import Dataset
 
 class VarianceThreshold:
     """
@@ -69,3 +69,23 @@ class VarianceThreshold:
         discrete_features = []
         print("NF: ",numeric_features)
         return Dataset(X=X, y=dataset.y, features=list(features),discrete_features=[],numeric_features=numeric_features, label=dataset.label)
+    
+if __name__ == '__main__':
+    # Criar um objeto Dataset de exemplo
+    X = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+    y = np.array([1, 2, 3])
+    features = ["feature1", "feature2", "feature3"]
+    numeric_features = ["feature1", "feature2"]  # Exemplo de numeric_features
+    dataset = Dataset(X=X, y=y, features=features, numeric_features=numeric_features)
+
+    # Criar um objeto VarianceThreshold e ajustá-lo ao conjunto de dados
+    threshold = 1.0
+    vt = VarianceThreshold(threshold=threshold)
+    vt.fit(dataset)
+
+    # Transformar o conjunto de dados de acordo com o limiar de variância
+    transformed_dataset = vt.transform(dataset)
+
+    # Imprimir o resultado
+    print("Features selecionadas:", transformed_dataset.features)
+    print("Dados transformados:\n", transformed_dataset.X)

@@ -1,7 +1,7 @@
 from typing import Tuple, Union
 import numpy as np
 from sklearn.linear_model import LinearRegression
-from data.dataset import Dataset
+from dataset import Dataset
 
 
 def f_regression(dataset: Dataset) -> Union[Tuple[np.ndarray, np.ndarray],
